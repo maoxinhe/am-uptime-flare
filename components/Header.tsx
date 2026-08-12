@@ -21,20 +21,18 @@ export default function Header() {
     <header className={classes.header}>
       <Container size="md" className={classes.inner}>
         <div>
-          <a href="https://www.youtube.com/@AM_CLUB" target="_blank">
-            <Text size="xl" span>
-              🕒
-            </Text>
-            <Text
-              size="xl"
-              span
-              fw={700}
-              variant="gradient"
-              gradient={{ from: 'blue', to: 'cyan', deg: 90 }}
-            >
-              服务监控
-            </Text>
-          </a>
+          <Text size="xl" span>
+            🐱
+          </Text>
+          <Text
+            size="xl"
+            span
+            fw={700}
+            variant="gradient"
+            gradient={{ from: '#ff9a9e', to: '#fecfef', deg: 135 }}
+          >
+            猫猫监控站
+          </Text>
         </div>
 
         <Group gap={5} visibleFrom="sm">
