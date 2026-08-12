@@ -1,9 +1,5 @@
-import { Text, Tooltip } from '@mantine/core'
 import { MonitorState, MonitorTarget } from '@/uptime.types'
-import { IconAlertCircle, IconCircleCheck } from '@tabler/icons-react'
-import DetailChart from './DetailChart'
-import DetailBar from './DetailBar'
-import { getColor } from '@/util/color'
+import { Badge, Card, Group, Text, Tooltip } from '@mantine/core'
 
 export default function MonitorDetail({
   monitor,
@@ -12,65 +8,110 @@ export default function MonitorDetail({
   monitor: MonitorTarget
   state: MonitorState
 }) {
-  if (!state.latency[monitor.id])
-    return (
-      <>
-        <Text mt="sm" fw={700}>
-          {monitor.name}
-        </Text>
-        <Text mt="sm" fw={700}>
-          No data available, please make sure you have deployed your workers with latest config and
-          check your worker status!
-        </Text>
-      </>
-    )
-
-  const statusIcon =
-    state.incident[monitor.id].slice(-1)[0].end === undefined ? (
-      <IconAlertCircle style={{ width: '1.25em', height: '1.25em', color: '#b91c1c' }} />
-    ) : (
-      <IconCircleCheck style={{ width: '1.25em', height: '1.25em', color: '#059669' }} />
-    )
-
-  let totalTime = Date.now() / 1000 - state.incident[monitor.id][0].start[0]
-  let downTime = 0
-  for (let incident of state.incident[monitor.id]) {
-    downTime += (incident.end ?? Date.now() / 1000) - incident.start[0]
+  // 获取该监控的状态
+  const getStatus = () => {
+    if (!state || !state.incident) return 'operational'
+    
+    const incidents = state.incident[monitor.id]
+    if (!incidents || incidents.length === 0) return 'operational'
+    
+    // 检查是否有未结束的故障
+    const hasOpenIncident = incidents.some((inc) => inc.end === undefined)
+    if (hasOpenIncident) return 'down'
+    
+    // 检查24小时内是否有故障
+    const now = Date.now()
+    const hasRecentIncident = incidents.some((inc) => {
+      const startTime = inc.start[0]
+      return now - startTime < 24 * 60 * 60 * 1000
+    })
+    if (hasRecentIncident) return 'degraded'
+    
+    return 'operational'
   }
 
-  const uptimePercent = (((totalTime - downTime) / totalTime) * 100).toPrecision(4)
+  const status = getStatus()
+  
+  const statusMap = {
+    operational: { label: '✅ 正常运行', color: 'green' },
+    degraded: { label: '⚠️ 性能下降', color: 'yellow' },
+    down: { label: '❌ 服务中断', color: 'red' },
+  }
 
-  // Conditionally render monitor name with or without hyperlink based on monitor.url presence
-  const monitorNameElement = (
-    <Text mt="sm" fw={700} style={{ display: 'inline-flex', alignItems: 'center' }}>
-      {monitor.statusPageLink ? (
-        <a href={monitor.statusPageLink} target="_blank" style={{ display: 'inline-flex', alignItems: 'center', color: 'inherit' }}>
-          {statusIcon} {monitor.name}
-        </a>
-      ) : (
-        <>
-          {statusIcon} {monitor.name}
-        </>
-      )}
-    </Text>
-  )
+  const statusInfo = statusMap[status] || statusMap.operational
+
+  // 获取延迟数据
+  const latencyData = state?.latency?.[monitor.id]
+  const latestPing = latencyData?.recent?.slice(-1)[0]?.ping
 
   return (
-    <>
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        {monitor.tooltip ? (
-          <Tooltip label={monitor.tooltip}>{monitorNameElement}</Tooltip>
-        ) : (
-          monitorNameElement
-        )}
+    <Card
+      shadow="none"
+      padding="md"
+      radius="md"
+      style={{
+        background: 'transparent',
+        border: 'none',
+        transition: 'all 0.2s ease',
+      }}
+    >
+      <Group justify="space-between" wrap="nowrap">
+        <Group gap="xs">
+          <Text fw={600} size="md" style={{ color: '#4a2a4a' }}>
+            {monitor.name}
+          </Text>
+          <Badge 
+            color={statusInfo.color} 
+            size="sm"
+            style={{
+              background: statusInfo.color === 'green' 
+                ? 'rgba(76, 175, 80, 0.2)' 
+                : statusInfo.color === 'yellow' 
+                  ? 'rgba(255, 193, 7, 0.2)' 
+                  : 'rgba(244, 67, 54, 0.2)',
+              color: statusInfo.color === 'green' 
+                ? '#2e7d32' 
+                : statusInfo.color === 'yellow' 
+                  ? '#f57f17' 
+                  : '#c62828',
+              border: `1px solid ${statusInfo.color === 'green' 
+                ? 'rgba(76, 175, 80, 0.3)' 
+                : statusInfo.color === 'yellow' 
+                  ? 'rgba(255, 193, 7, 0.3)' 
+                  : 'rgba(244, 67, 54, 0.3)'}`,
+            }}
+          >
+            {statusInfo.label}
+          </Badge>
+        </Group>
 
-        <Text mt="sm" fw={700} style={{ display: 'inline', color: getColor(uptimePercent, true) }}>
-          Overall: {uptimePercent}%
+        <Group gap="md">
+          {latestPing !== undefined && (
+            <Text size="sm" style={{ color: '#7a5a7a' }}>
+              ⏱️ {latestPing}ms
+            </Text>
+          )}
+          {monitor.statusPageLink && (
+            <Tooltip label="查看详情">
+              <Text
+                size="sm"
+                style={{ color: '#ff6b8a' }}
+                component="a"
+                href={monitor.statusPageLink}
+                target="_blank"
+              >
+                🔗
+              </Text>
+            </Tooltip>
+          )}
+        </Group>
+      </Group>
+
+      {monitor.tooltip && (
+        <Text size="xs" style={{ color: '#9a7a9a', marginTop: '4px' }}>
+          {monitor.tooltip}
         </Text>
-      </div>
-
-      <DetailBar monitor={monitor} state={state} />
-      <DetailChart monitor={monitor} state={state} />
-    </>
+      )}
+    </Card>
   )
 }
