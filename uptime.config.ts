@@ -4,7 +4,6 @@ const pageConfig = {
   // Links shown at the header of your status page, could set `highlight` to `true`
   links: [
     { link: 'https://web.catfix.top', label: '博客', highlight: true },
-    { link: 'https://809098.xyz', label: 'Blog'}, 
     { link: 'https://github.com/maoxinhe', label: 'GitHub' }, 
   ],
 }
@@ -16,31 +15,35 @@ const workerConfig = {
   // passwordProtection: 'username:password',
   // Define all your monitors here
   monitors: [
-    // Example HTTP Monitor
+    // HTTP Monitor
     {
       id: 'web.catfix.top',
       name: '博客',
       method: 'GET',
-      target: 'https://am.809098.xyz',
-      tooltip: 'This is a tooltip for this monitor',
-      statusPageLink: 'https://am.809098.xyz',
+      target: 'https://web.catfix.top',
+      tooltip: '博客网站监控',
+      statusPageLink: 'https://web.catfix.top',
       timeout: 10000,
     },
-    // Example TCP Monitor
+    // TCP Monitor
     {
       id: '809098.xyz',
       name: 'Blog',
-      method: 'TCP_PING',  // ← 这里也要改，应该是 TCP_PING
-      target: '809098.xyz:443',  // ← TCP 监控格式是 host:port
-      tooltip: 'My production server monitor',
+      method: 'TCP_PING',
+      target: '809098.xyz:443',
+      tooltip: '博客网站端口监控',
       statusPageLink: 'https://809098.xyz',
       timeout: 10000,
     },
   ],
   notification: {
+    // Apprise API server URL - 用于 Resend 邮件
     appriseApiServer: "https://apprise.example.com/notify",
-    recipientUrl: "tgram://bottoken/ChatID",
+    // Resend 邮件配置
+    recipientUrl: "mailto:///your-email@example.com?from=uptime@yourdomain.com&smtp=smtp.resend.com&port=587&user=resend_api_key&pass=your_resend_api_key",
+    // 时区
     timeZone: "Asia/Shanghai",
+    // 宽限期：连续失败5分钟后才发送通知
     gracePeriod: 5,
   },
   callbacks: {
@@ -52,7 +55,7 @@ const workerConfig = {
       timeNow: number,
       reason: string
     ) => {
-      // This callback will be called when there's a status change for any monitor
+      // 状态变化回调
     },
     onIncident: async (
       env: any,
@@ -61,7 +64,7 @@ const workerConfig = {
       timeNow: number,
       reason: string
     ) => {
-      // This callback will be called EVERY 1 MINTUE if there's an on-going incident for any monitor
+      // 持续故障回调
     },
   },
 }
