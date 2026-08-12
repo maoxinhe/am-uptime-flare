@@ -1,30 +1,32 @@
 import { Center, Text, RingProgress, Paper } from '@mantine/core'
 import { MonitorState } from '@/uptime.types'
 
-export default function OverallStatus({ state }: { state: MonitorState }) {
-  // 检查是否有有效数据（通过 lastUpdate 判断）
-  const hasValidData = state?.lastUpdate && state.lastUpdate > 1000000000 // 2001年之后
+// ===== 强制北京时间格式化函数 =====
+function formatBeijingTime(timestamp: number): string {
+  if (!timestamp || timestamp < 1000000000) {
+    return '等待数据采集...'
+  }
   
-  // 从 state 中获取整体状态数据
+  const date = new Date(timestamp * 1000)
+  const beijingTime = new Date(date.getTime() + 8 * 60 * 60 * 1000)
+  
+  const year = beijingTime.getUTCFullYear()
+  const month = String(beijingTime.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(beijingTime.getUTCDate()).padStart(2, '0')
+  const hours = String(beijingTime.getUTCHours()).padStart(2, '0')
+  const minutes = String(beijingTime.getUTCMinutes()).padStart(2, '0')
+  const seconds = String(beijingTime.getUTCSeconds()).padStart(2, '0')
+  
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
+
+export default function OverallStatus({ state }: { state: MonitorState }) {
+  const hasValidData = state?.lastUpdate && state.lastUpdate > 1000000000
+  
   const up = state?.overallUp || 0
   const down = state?.overallDown || 0
   const total = up + down || 1
   const percentage = total > 0 ? (up / total) * 100 : 0
-
-  // 格式化时间
-  const formatTime = (timestamp: number) => {
-    if (!timestamp || timestamp < 1000000000) {
-      return '等待数据采集...'
-    }
-    return new Date(timestamp).toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    })
-  }
 
   return (
     <Paper
@@ -86,7 +88,7 @@ export default function OverallStatus({ state }: { state: MonitorState }) {
             </Text>
           )}
           <Text size="xs" style={{ color: '#9a7a9a', marginTop: '4px' }}>
-            {hasValidData ? `📅 最后更新: ${formatTime(state.lastUpdate)}` : '⏳ 首次数据采集中，请稍候...'}
+            {hasValidData ? `📅 最后更新: ${formatBeijingTime(state.lastUpdate)}` : '⏳ 首次数据采集中，请稍候...'}
           </Text>
         </div>
       </Center>
