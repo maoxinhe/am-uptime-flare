@@ -1,5 +1,7 @@
 const pageConfig = {
+  // Title for your status page
   title: "猫猫监控站",
+  // Links shown at the header of your status page, could set `highlight` to `true`
   links: [
     { link: 'https://web.catfix.top', label: '博客', highlight: true },
     { link: 'https://github.com/maoxinhe', label: 'GitHub' }, 
@@ -7,8 +9,13 @@ const pageConfig = {
 }
 
 const workerConfig = {
+  // Write KV at most every 3 minutes unless the status changed
   kvWriteCooldownMinutes: 3,
+  // Enable HTTP Basic auth for status page & API by uncommenting the line below, format `<USERNAME>:<PASSWORD>`
+  // passwordProtection: 'username:password',
+  // Define all your monitors here
   monitors: [
+    // HTTP Monitor
     {
       id: 'web.catfix.top',
       name: '博客',
@@ -18,6 +25,7 @@ const workerConfig = {
       statusPageLink: 'https://web.catfix.top',
       timeout: 10000,
     },
+    // TCP Monitor
     {
       id: '809098.xyz',
       name: 'Blog',
@@ -29,10 +37,13 @@ const workerConfig = {
     },
   ],
   notification: {
+    // Apprise API server URL
     appriseApiServer: "https://apprise.example.com/notify",
-    // 使用环境变量，不要在代码中硬编码
-    recipientUrl: `mailto:///catkinr@163.com?from=onboarding@resend.dev&smtp=smtp.resend.com&port=587&user=resend&pass=${env.RESEND_API_KEY}`,
+    // Resend 测试模式 - 直接写入 API Key
+    recipientUrl: "mailto:///catkinr@163.com?from=onboarding@resend.dev&smtp=smtp.resend.com&port=587&user=resend&pass=re_DpXVX647_KpRfGECTkb3JHKNmz31DATpm",
+    // 时区
     timeZone: "Asia/Shanghai",
+    // 宽限期：连续失败5分钟后才发送通知
     gracePeriod: 5,
   },
   callbacks: {
