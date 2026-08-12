@@ -1,177 +1,201 @@
 import { MonitorState, MonitorTarget } from '@/uptime.types'
-import { Card, Text, Tooltip } from '@mantine/core'
+import { Card, Text, Badge, Group, Box } from '@mantine/core'
 
 interface TreeMapProps {
   monitors: MonitorTarget[]
   state: MonitorState
 }
 
-export default function TreeMap({ monitors, state }: TreeMapProps) {
-  // 获取每个监控的状态
-  const getMonitorStatus = (id: string) => {
-    if (!state || !state.incident) return 'operational'
-    
-    const incidents = state.incident[id]
-    if (!incidents || incidents.length === 0) return 'operational'
-    
-    const hasOpenIncident = incidents.some((inc) => inc.end === undefined)
-    if (hasOpenIncident) return 'down'
-    
-    const now = Date.now()
-    const hasRecentIncident = incidents.some((inc) => {
-      const startTime = inc.start[0] * 1000
-      return now - startTime < 24 * 60 * 60 * 1000
-    })
-    if (hasRecentIncident) return 'degraded'
-    
-    return 'operational'
+// 自定义分组配置 - 根据你的监控项名称来分组
+const getGroup = (monitorName: string): string => {
+  if (monitorName.includes('博客') || monitorName.includes('Blog')) {
+    return '网站'
+  }
+  if (monitorName.includes('服务器') || monitorName.includes('Server')) {
+    return '服务器'
+  }
+  return '其他'
+}
+
+// 获取状态标签
+const getStatusInfo = (id: string, state: MonitorState) => {
+  if (!state || !state.incident) {
+    return { label: '⏳ 等待数据', color: 'gray' }
   }
 
-  // 获取延迟数据
-  const getLatency = (id: string) => {
+  const incidents = state.incident[id]
+  if (!incidents || incidents.length === 0) {
+    return { label: '✅ 正常', color: 'green' }
+  }
+
+  const hasOpenIncident = incidents.some((inc) => inc.end === undefined)
+  if (hasOpenIncident) {
+    return { label: '❌ 服务中断', color: 'red' }
+  }
+
+  const now = Date.now()
+  const hasRecentIncident = incidents.some((inc) => {
+    const startTime = inc.start[0] * 1000
+    return now - startTime < 24 * 60 * 60 * 1000
+  })
+  if (hasRecentIncident) {
+    return { label: '⚠️ 降级', color: 'yellow' }
+  }
+
+  return { label: '✅ 正常', color: 'green' }
+}
+
+export default function TreeMap({ monitors, state }: TreeMapProps) {
+  // 按分组整理数据
+  const groups: Record<string, MonitorTarget[]> = {}
+  
+  monitors.forEach((monitor) => {
+    const group = getGroup(monitor.name)
+    if (!groups[group]) {
+      groups[group] = []
+    }
+    groups[group].push(monitor)
+  })
+
+  // 获取延迟显示
+  const getLatencyDisplay = (id: string) => {
     const latencyData = state?.latency?.[id]
     if (!latencyData?.recent || latencyData.recent.length === 0) return null
-    const recent = latencyData.recent.slice(-10) // 最近10个数据点
+    const recent = latencyData.recent.slice(-5)
     const avg = recent.reduce((sum, d) => sum + d.ping, 0) / recent.length
     return Math.round(avg)
   }
 
-  const statusColors = {
-    operational: {
-      bg: 'rgba(76, 175, 80, 0.25)',
-      border: 'rgba(76, 175, 80, 0.4)',
-      text: '#2e7d32',
-      label: '✅ 运行中'
-    },
-    degraded: {
-      bg: 'rgba(255, 193, 7, 0.25)',
-      border: 'rgba(255, 193, 7, 0.4)',
-      text: '#f57f17',
-      label: '⚠️ 降级'
-    },
-    down: {
-      bg: 'rgba(244, 67, 54, 0.25)',
-      border: 'rgba(244, 67, 54, 0.4)',
-      text: '#c62828',
-      label: '❌ 中断'
-    }
+  const groupEmojis: Record<string, string> = {
+    '网站': '🌐',
+    '服务器': '🖥️',
+    '其他': '📦'
   }
 
-  // 计算总数用于百分比
-  const totalCount = monitors.length
-
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-      gap: '12px',
-      width: '100%',
-      marginTop: '16px',
-    }}>
-      {monitors.map((monitor) => {
-        const status = getMonitorStatus(monitor.id)
-        const colors = statusColors[status as keyof typeof statusColors] || statusColors.operational
-        const latency = getLatency(monitor.id)
-
-        return (
-          <Tooltip
-            key={monitor.id}
-            label={`
-              ${monitor.name}
-              状态: ${colors.label}
-              ${latency ? `延迟: ${latency}ms` : '等待数据...'}
-              ${monitor.tooltip || ''}
-            `}
-            multiline
-            style={{ fontSize: '12px' }}
+    <Card
+      padding="lg"
+      radius="md"
+      style={{
+        background: 'rgba(255, 255, 255, 0.08)',
+        backdropFilter: 'blur(16px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+        border: '1px solid rgba(255, 255, 255, 0.15)',
+        borderRadius: '16px',
+      }}
+    >
+      {Object.entries(groups).map(([groupName, groupMonitors]) => (
+        <Box key={groupName} mb="md">
+          {/* 分组标题 */}
+          <Text 
+            size="sm" 
+            fw={600} 
+            style={{ 
+              color: '#5a3d5a',
+              marginBottom: '8px',
+              paddingBottom: '4px',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
+            }}
           >
-            <Card
-              padding="md"
-              radius="md"
-              style={{
-                background: colors.bg,
-                border: `2px solid ${colors.border}`,
-                borderRadius: '12px',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                minHeight: '80px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                backdropFilter: 'blur(10px)',
-                WebkitBackdropFilter: 'blur(10px)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'scale(1.03)'
-                e.currentTarget.style.boxShadow = `0 8px 25px ${colors.border}`
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'scale(1)'
-                e.currentTarget.style.boxShadow = 'none'
-              }}
-            >
-              <Text
-                size="sm"
-                fw={600}
+            {groupEmojis[groupName] || '📁'} {groupName}
+          </Text>
+
+          {/* 组内服务列表 */}
+          {groupMonitors.map((monitor) => {
+            const statusInfo = getStatusInfo(monitor.id, state)
+            const latency = getLatencyDisplay(monitor.id)
+
+            return (
+              <Box
+                key={monitor.id}
                 style={{
-                  color: colors.text,
-                  textAlign: 'center',
-                  fontSize: '14px',
-                  lineHeight: 1.3,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '10px 12px',
+                  marginBottom: '4px',
+                  borderRadius: '10px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
                 }}
               >
-                {monitor.name}
-              </Text>
-              
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                marginTop: '6px',
-              }}>
-                <span style={{
-                  display: 'inline-block',
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: colors.text,
-                  animation: status === 'down' ? 'pulse 1s ease-in-out infinite' : 'none',
-                }} />
-                <Text size="xs" style={{ color: colors.text, opacity: 0.8 }}>
-                  {latency !== null ? `${latency}ms` : '⏳'}
-                </Text>
-              </div>
+                <Group gap="xs">
+                  <Text size="sm" style={{ color: '#4a2a4a' }}>
+                    {monitor.name}
+                  </Text>
+                  {latency !== null && (
+                    <Text size="xs" style={{ color: '#9a7a9a' }}>
+                      {latency}ms
+                    </Text>
+                  )}
+                </Group>
 
-              {/* 状态占比条 */}
-              <div style={{
-                width: '100%',
-                height: '3px',
-                background: 'rgba(0,0,0,0.05)',
-                borderRadius: '2px',
-                marginTop: '8px',
-                overflow: 'hidden',
-              }}>
-                <div style={{
-                  width: `${(1 / totalCount) * 100}%`,
-                  height: '100%',
-                  background: colors.text,
-                  borderRadius: '2px',
-                  transition: 'width 0.5s ease',
-                }} />
-              </div>
-            </Card>
-          </Tooltip>
-        )
-      })}
+                <Badge
+                  size="sm"
+                  style={{
+                    background: statusInfo.color === 'green' 
+                      ? 'rgba(76, 175, 80, 0.15)' 
+                      : statusInfo.color === 'yellow' 
+                        ? 'rgba(255, 193, 7, 0.15)' 
+                        : statusInfo.color === 'red'
+                          ? 'rgba(244, 67, 54, 0.15)'
+                          : 'rgba(158, 158, 158, 0.15)',
+                    color: statusInfo.color === 'green' 
+                      ? '#2e7d32' 
+                      : statusInfo.color === 'yellow' 
+                        ? '#f57f17' 
+                        : statusInfo.color === 'red'
+                          ? '#c62828'
+                          : '#616161',
+                    border: 'none',
+                    fontWeight: 500,
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                  }}
+                >
+                  {statusInfo.label}
+                </Badge>
+              </Box>
+            )
+          })}
+        </Box>
+      ))}
 
-      {/* 添加脉冲动画 */}
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.3; }
-        }
-      `}</style>
-    </div>
+      {/* 底部更新时间 */}
+      <Box mt="md" pt="sm" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+        <Text size="xs" style={{ color: '#9a7a9a' }}>
+          最后更新: {formatBeijingTime(state?.lastUpdate)}
+        </Text>
+      </Box>
+    </Card>
   )
+}
+
+// ===== 强制北京时间格式化函数 =====
+function formatBeijingTime(timestamp: number): string {
+  if (!timestamp || timestamp < 1000000000) {
+    return '等待数据采集...'
+  }
+  
+  // 创建日期对象
+  const date = new Date(timestamp * 1000)
+  
+  // 强制转换为北京时间 (UTC+8)
+  const beijingTime = new Date(date.getTime() + 8 * 60 * 60 * 1000)
+  
+  const year = beijingTime.getUTCFullYear()
+  const month = String(beijingTime.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(beijingTime.getUTCDate()).padStart(2, '0')
+  const hours = String(beijingTime.getUTCHours()).padStart(2, '0')
+  const minutes = String(beijingTime.getUTCMinutes()).padStart(2, '0')
+  const seconds = String(beijingTime.getUTCSeconds()).padStart(2, '0')
+  
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
