@@ -37,13 +37,10 @@ const workerConfig = {
     },
   ],
   notification: {
-    // Apprise API server URL
-    appriseApiServer: "https://apprise.example.com/notify",
-    // Resend 测试模式 - 直接写入 API Key
-    recipientUrl: "mailto:///catkinr@163.com?from=onboarding@resend.dev&smtp=smtp.resend.com&port=587&user=resend&pass=re_DpXVX647_KpRfGECTkb3JHKNmz31DATpm",
-    // 时区
+    // 暂时禁用邮件通知 - 等域名审核通过再启用
+    // appriseApiServer: "https://apprise.example.com/notify",
+    // recipientUrl: "mailto:///catkinr@163.com?...",
     timeZone: "Asia/Shanghai",
-    // 宽限期：连续失败5分钟后才发送通知
     gracePeriod: 5,
   },
   callbacks: {
