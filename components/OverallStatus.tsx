@@ -2,31 +2,11 @@ import { Center, Text, RingProgress, Paper } from '@mantine/core'
 import { MonitorState } from '@/uptime.types'
 
 export default function OverallStatus({ state }: { state: MonitorState }) {
-  // 安全获取数据
-  const getMonitorCount = () => {
-    if (!state) return { total: 1, up: 0 }
-    
-    // 如果 state 本身就是数组
-    if (Array.isArray(state)) {
-      const total = state.length || 1
-      const up = state.filter((m: any) => m.status === 'operational').length || 0
-      return { total, up }
-    }
-    
-    // 如果 state 有 monitors 属性
-    if (state.monitors && Array.isArray(state.monitors)) {
-      const total = state.monitors.length || 1
-      const up = state.monitors.filter((m: any) => m.status === 'operational').length || 0
-      return { total, up }
-    }
-    
-    // 默认
-    return { total: 1, up: 0 }
-  }
-
-  const { total, up } = getMonitorCount()
-  const down = total - up
-  const percentage = (up / total) * 100
+  // 从 state 中获取整体状态数据
+  const up = state?.overallUp || 0
+  const down = state?.overallDown || 0
+  const total = up + down || 1 // 避免除以0
+  const percentage = total > 0 ? (up / total) * 100 : 100
 
   return (
     <Paper
@@ -79,6 +59,9 @@ export default function OverallStatus({ state }: { state: MonitorState }) {
               ✨ 所有服务运行正常
             </Text>
           )}
+          <Text size="xs" style={{ color: '#9a7a9a', marginTop: '4px' }}>
+            最后更新: {state?.lastUpdate ? new Date(state.lastUpdate).toLocaleString('zh-CN') : '--'}
+          </Text>
         </div>
       </Center>
     </Paper>
