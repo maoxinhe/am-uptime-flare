@@ -1,5 +1,4 @@
 import Head from 'next/head'
-
 import { Inter } from 'next/font/google'
 import { MonitorState, MonitorTarget } from '@/uptime.types'
 import { KVNamespace } from '@cloudflare/workers-types'
@@ -7,7 +6,7 @@ import { pageConfig, workerConfig } from '@/uptime.config'
 import OverallStatus from '@/components/OverallStatus'
 import Header from '@/components/Header'
 import MonitorList from '@/components/MonitorList'
-import { Center, Divider, Text } from '@mantine/core'
+import { Center, Divider, Text, Container } from '@mantine/core'
 import MonitorDetail from '@/components/MonitorDetail'
 
 export const runtime = 'experimental-edge'
@@ -27,21 +26,24 @@ export default function Home({
     state = JSON.parse(stateStr) as MonitorState
   }
 
-  // Specify monitorId in URL hash to view a specific monitor (can be used in iframe)
   const monitorId = window.location.hash.substring(1);
   if (monitorId) {
     const monitor = monitors.find((monitor) => monitor.id === monitorId);
     if (!monitor || !state) {
       return (
-        <Text fw={700}>
-          Monitor with id {monitorId} not found!
-        </Text>
+        <Container>
+          <Text fw={700} style={{ color: '#5a3d5a' }}>
+            Monitor with id {monitorId} not found!
+          </Text>
+        </Container>
       )
     }
     return (
-      <div style={{ maxWidth: '810px' }}>
-        <MonitorDetail monitor={monitor} state={state} />
-      </div>
+      <Container>
+        <div style={{ maxWidth: '810px', margin: '0 auto' }}>
+          <MonitorDetail monitor={monitor} state={state} />
+        </div>
+      </Container>
     )
   }
 
@@ -55,38 +57,64 @@ export default function Home({
       <main className={inter.className}>
         <Header />
 
-        {state === undefined ? (
-          <Center>
-            <Text fw={700}>
-              Monitor State is not defined now, please check your worker&apos;s status and KV
-              binding!
-            </Text>
-          </Center>
-        ) : (
-          <div>
-            <OverallStatus state={state} />
-            <MonitorList monitors={monitors} state={state} />
-          </div>
-        )}
+        <Container size="md" py="xl">
+          {state === undefined ? (
+            <Center>
+              <Text fw={700} style={{ color: '#5a3d5a' }}>
+                Monitor State is not defined now, please check your worker&apos;s status and KV
+                binding!
+              </Text>
+            </Center>
+          ) : (
+            <div>
+              <OverallStatus state={state} />
+              <MonitorList monitors={monitors} state={state} />
+            </div>
+          )}
 
-        <Divider mt="lg" />
-        <Text size="xs" mt="xs" mb="xs" style={{
-          textAlign: 'center'
-        }}>
-          Open-source monitoring and status page powered by{' '}
-          <a href="https://github.com/amclubs/am-uptime-flare" target="_blank">
-            UptimeFlare
-          </a>{' '}
-          and{' '}
-          <a href="https://www.cloudflare.com/" target="_blank">
-            Cloudflare
-          </a>
-          , made with ❤ by{' '}
-          <a href="https://github.com/amclubs" target="_blank">
-            amclubs
-          </a>
-          .
-        </Text>
+          <Divider 
+            mt="xl" 
+            style={{ 
+              borderColor: 'rgba(255, 255, 255, 0.3)',
+              marginTop: '40px',
+            }} 
+          />
+          <Text 
+            size="xs" 
+            mt="md" 
+            mb="lg" 
+            style={{
+              textAlign: 'center',
+              color: 'rgba(90, 61, 90, 0.6)',
+            }}
+          >
+            ✨ 开源监控系统 · 由{' '}
+            <a 
+              href="https://github.com/maoxinhe" 
+              target="_blank"
+              style={{ 
+                color: '#ff6b8a',
+                textDecoration: 'none',
+                fontWeight: 500,
+              }}
+            >
+              Uptime
+            </a>
+            {' '}和{' '}
+            <a 
+              href="https://www.cloudflare.com/" 
+              target="_blank"
+              style={{ 
+                color: '#ff6b8a',
+                textDecoration: 'none',
+                fontWeight: 500,
+              }}
+            >
+              maoxinhe
+            </a>
+            {' '}驱动 · 感谢猫慧云提供技术支持
+          </Text>
+        </Container>
       </main>
     </>
   )
@@ -97,17 +125,13 @@ export async function getServerSideProps() {
     UPTIMEFLARE_STATE: KVNamespace
   }
 
-  // Read state as string from KV, to avoid hitting server-side cpu time limit
   const state = (await UPTIMEFLARE_STATE?.get('state')) as unknown as MonitorState
 
-  // Only present these values to client
   const monitors = workerConfig.monitors.map((monitor) => {
     return {
       id: monitor.id,
       name: monitor.name,
-      // @ts-ignore
       tooltip: monitor?.tooltip,
-      // @ts-ignore
       statusPageLink: monitor?.statusPageLink
     }
   })
