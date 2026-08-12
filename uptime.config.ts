@@ -1,58 +1,48 @@
 const pageConfig = {
-  // 状态页标题
+  // Title for your status page
   title: "猫猫监控站",
-  // 页眉链接
+  // Links shown at the header of your status page, could set `highlight` to `true`
   links: [
     { link: 'https://web.catfix.top', label: '博客', highlight: true },
-    { link: ''https://web.catfix.top', label: 'Blog'},
+    { link: 'https://809098.xyz', label: 'Blog'}, 
     { link: 'https://github.com/maoxinhe', label: 'GitHub' }, 
   ],
 }
 
 const workerConfig = {
-  // KV 写入冷却时间（分钟）
+  // Write KV at most every 3 minutes unless the status changed
   kvWriteCooldownMinutes: 3,
-  
-  // 如需 HTTP 基本认证，取消注释并设置用户名密码
+  // Enable HTTP Basic auth for status page & API by uncommenting the line below, format `<USERNAME>:<PASSWORD>`
   // passwordProtection: 'username:password',
-  
+  // Define all your monitors here
   monitors: [
-    // HTTP 监控示例 - 监控博客网站
+    // Example HTTP Monitor
     {
-      id: 'blog-http',                    // 唯一ID
-      name: '博客 (HTTP)',                // 显示名称
-      method: 'GET',                      // 请求方法
-      target: 'https://web.catfix.top',   // 监控目标URL
-      tooltip: '博客网站 HTTP 可用性监控',
-      statusPageLink: 'https://web.catfix.top',
-      timeout: 10000,                     // 超时时间 10秒
-      expectedCodes: [200, 301, 302],    // 接受的状态码
+      id: 'web.catfix.top',
+      name: '博客',
+      method: 'GET',
+      target: 'https://am.809098.xyz',
+      tooltip: 'This is a tooltip for this monitor',
+      statusPageLink: 'https://am.809098.xyz',
+      timeout: 10000,
     },
-    
-    // TCP 监控示例 - 监控另一个站点
+    // Example TCP Monitor
     {
-      id: 'blog-tcp',                     // 唯一ID
-      name: 'Blog (TCP)',                // 显示名称
-      method: 'TCP_PING',                // TCP 监控使用 TCP_PING
-      target: '809098.xyz:443',          // TCP 监控格式: host:port
-      tooltip: '博客网站 TCP 端口可用性监控',
+      id: '809098.xyz',
+      name: 'Blog',
+      method: 'TCP_PING',  // ← 这里也要改，应该是 TCP_PING
+      target: '809098.xyz:443',  // ← TCP 监控格式是 host:port
+      tooltip: 'My production server monitor',
       statusPageLink: 'https://809098.xyz',
       timeout: 10000,
     },
   ],
-  
-  // 通知配置
   notification: {
-    // Apprise API 服务器地址（需要替换成你自己的）
-    appriseApiServer: "https://your-apprise-server.com/notify",
-    // 接收通知的地址（需要替换）
-    recipientUrl: "tgram://你的BotToken/你的ChatID",
-    // 时区
+    appriseApiServer: "https://apprise.example.com/notify",
+    recipientUrl: "tgram://bottoken/ChatID",
     timeZone: "Asia/Shanghai",
-    // 宽限期：连续失败5分钟后才发送通知
     gracePeriod: 5,
   },
-  
   callbacks: {
     onStatusChange: async (
       env: any,
@@ -62,9 +52,7 @@ const workerConfig = {
       timeNow: number,
       reason: string
     ) => {
-      // 状态变化时的回调
-      console.log(`监控 ${monitor.name} 状态变更: ${isUp ? '恢复' : '故障'}`);
-      console.log(`原因: ${reason}`);
+      // This callback will be called when there's a status change for any monitor
     },
     onIncident: async (
       env: any,
@@ -73,8 +61,7 @@ const workerConfig = {
       timeNow: number,
       reason: string
     ) => {
-      // 持续故障时的回调（每分钟触发）
-      console.log(`监控 ${monitor.name} 持续故障中...`);
+      // This callback will be called EVERY 1 MINTUE if there's an on-going incident for any monitor
     },
   },
 }
