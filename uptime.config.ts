@@ -1,80 +1,58 @@
 const pageConfig = {
-  // Title for your status page
-  title: "数字套利 •「AM科技」's Status Page",
-  // Links shown at the header of your status page, could set `highlight` to `true`
+  // 状态页标题
+  title: "猫猫监控站",
+  // 页眉链接
   links: [
-    { link: 'https://amclubss.com', label: '博客', highlight: true },
-    { link: 'https://809098.xyz', label: 'Blog'},
-    { link: 'https://youtube.com/@AM_CLUBS', label: 'YouTube' },
-    { link: 'https://github.com/amclubs', label: 'GitHub' }, 
+    { link: 'https://web.catfix.top', label: '博客', highlight: true },
+    { link: ''https://web.catfix.top', label: 'Blog'},
+    { link: 'https://github.com/maoxinhe', label: 'GitHub' }, 
   ],
 }
 
 const workerConfig = {
-  // Write KV at most every 3 minutes unless the status changed
+  // KV 写入冷却时间（分钟）
   kvWriteCooldownMinutes: 3,
-  // Enable HTTP Basic auth for status page & API by uncommenting the line below, format `<USERNAME>:<PASSWORD>`
+  
+  // 如需 HTTP 基本认证，取消注释并设置用户名密码
   // passwordProtection: 'username:password',
-  // Define all your monitors here
+  
   monitors: [
-    // Example HTTP Monitor
+    // HTTP 监控示例 - 监控博客网站
     {
-      // `id` should be unique, history will be kept if the `id` remains constant
-      id: 'am.809098.xyz',
-      // `name` is used at status page and callback message
-      name: '博客',
-      // `method` should be a valid HTTP Method
-      method: 'GET',
-      // `target` is a valid URL
-      target: 'https://am.809098.xyz',
-      // [OPTIONAL] `tooltip` is ONLY used at status page to show a tooltip
-      tooltip: 'This is a tooltip for this monitor',
-      // [OPTIONAL] `statusPageLink` is ONLY used for clickable link at status page
-      statusPageLink: 'https://am.809098.xyz',
-      // [OPTIONAL] `expectedCodes` is an array of acceptable HTTP response codes, if not specified, default to 2xx
-      // expectedCodes: [200],
-      // [OPTIONAL] `timeout` in millisecond, if not specified, default to 10000
-      timeout: 10000,
-      // [OPTIONAL] headers to be sent
-      // headers: {
-      //   'User-Agent': 'Uptimeflare',
-      //   Authorization: 'Bearer YOUR_TOKEN_HERE',
-      // },
-      // [OPTIONAL] body to be sent
-      // body: 'Hello, world!',
-      // [OPTIONAL] if specified, the response must contains the keyword to be considered as operational.
-      // responseKeyword: 'success',
-      // [OPTIONAL] if specified, the check will run in your specified region,
-      // refer to docs https://github.com/lyc8503/UptimeFlare/wiki/Geo-specific-checks-setup before setting this value
-      // checkLocationWorkerRoute: 'https://am.809098.xyz',
+      id: 'blog-http',                    // 唯一ID
+      name: '博客 (HTTP)',                // 显示名称
+      method: 'GET',                      // 请求方法
+      target: 'https://web.catfix.top',   // 监控目标URL
+      tooltip: '博客网站 HTTP 可用性监控',
+      statusPageLink: 'https://web.catfix.top',
+      timeout: 10000,                     // 超时时间 10秒
+      expectedCodes: [200, 301, 302],    // 接受的状态码
     },
-    // Example TCP Monitor
+    
+    // TCP 监控示例 - 监控另一个站点
     {
-      id: '809098.xyz',
-      name: 'Blog',
-      // `method` should be `TCP_PING` for tcp monitors
-      method: 'GET',
-      // `target` should be `host:port` for tcp monitors
-      target: 'https://809098.xyz',
-      tooltip: 'My production server monitor',
+      id: 'blog-tcp',                     // 唯一ID
+      name: 'Blog (TCP)',                // 显示名称
+      method: 'TCP_PING',                // TCP 监控使用 TCP_PING
+      target: '809098.xyz:443',          // TCP 监控格式: host:port
+      tooltip: '博客网站 TCP 端口可用性监控',
       statusPageLink: 'https://809098.xyz',
       timeout: 10000,
     },
   ],
+  
+  // 通知配置
   notification: {
-    // [Optional] apprise API server URL
-    // if not specified, no notification will be sent
-    appriseApiServer: "https://apprise.example.com/notify",
-    // [Optional] recipient URL for apprise, refer to https://github.com/caronc/apprise
-    // if not specified, no notification will be sent
-    recipientUrl: "tgram://bottoken/ChatID",
-    // [Optional] timezone used in notification messages, default to "Etc/GMT"
+    // Apprise API 服务器地址（需要替换成你自己的）
+    appriseApiServer: "https://your-apprise-server.com/notify",
+    // 接收通知的地址（需要替换）
+    recipientUrl: "tgram://你的BotToken/你的ChatID",
+    // 时区
     timeZone: "Asia/Shanghai",
-    // [Optional] grace period in minutes before sending a notification
-    // notification will be sent only if the monitor is down for N continuous checks after the initial failure
-    // if not specified, notification will be sent immediately
+    // 宽限期：连续失败5分钟后才发送通知
     gracePeriod: 5,
   },
+  
   callbacks: {
     onStatusChange: async (
       env: any,
@@ -84,11 +62,9 @@ const workerConfig = {
       timeNow: number,
       reason: string
     ) => {
-      // This callback will be called when there's a status change for any monitor
-      // Write any Typescript code here
-
-      // This will not follow the grace period settings and will be called immediately when the status changes
-      // You need to handle the grace period manually if you want to implement it
+      // 状态变化时的回调
+      console.log(`监控 ${monitor.name} 状态变更: ${isUp ? '恢复' : '故障'}`);
+      console.log(`原因: ${reason}`);
     },
     onIncident: async (
       env: any,
@@ -97,11 +73,10 @@ const workerConfig = {
       timeNow: number,
       reason: string
     ) => {
-      // This callback will be called EVERY 1 MINTUE if there's an on-going incident for any monitor
-      // Write any Typescript code here
+      // 持续故障时的回调（每分钟触发）
+      console.log(`监控 ${monitor.name} 持续故障中...`);
     },
   },
 }
 
-// Don't forget this, otherwise compilation fails.
 export { pageConfig, workerConfig }
