@@ -6,6 +6,7 @@ import { pageConfig, workerConfig } from '@/uptime.config'
 import OverallStatus from '@/components/OverallStatus'
 import Header from '@/components/Header'
 import MonitorList from '@/components/MonitorList'
+import TreeMap from '@/components/TreeMap'  // ← 导入树状图
 import { Center, Divider, Text, Container } from '@mantine/core'
 import MonitorDetail from '@/components/MonitorDetail'
 
@@ -33,7 +34,7 @@ export default function Home({
       return (
         <Container>
           <Text fw={700} style={{ color: '#5a3d5a' }}>
-            Monitor with id {monitorId} not found!
+            未找到 ID 为 {monitorId} 的监控项
           </Text>
         </Container>
       )
@@ -61,13 +62,40 @@ export default function Home({
           {state === undefined ? (
             <Center>
               <Text fw={700} style={{ color: '#5a3d5a' }}>
-                Monitor State is not defined now, please check your worker&apos;s status and KV
-                binding!
+                监控状态未定义，请检查 Worker 状态和 KV 绑定！
               </Text>
             </Center>
           ) : (
             <div>
               <OverallStatus state={state} />
+              
+              {/* ===== 🎯 树状图区域 ===== */}
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.10)',
+                backdropFilter: 'blur(16px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+                border: '1px solid rgba(255, 255, 255, 0.20)',
+                borderRadius: '20px',
+                padding: '20px 24px',
+                marginBottom: '24px',
+                boxShadow: '0 4px 20px rgba(255, 154, 158, 0.08)',
+              }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '12px',
+                }}>
+                  <Text size="sm" fw={600} style={{ color: '#5a3d5a' }}>
+                    🌳 服务状态树状图
+                  </Text>
+                  <Text size="xs" style={{ color: '#9a7a9a' }}>
+                    {monitors.length} 个服务
+                  </Text>
+                </div>
+                <TreeMap monitors={monitors} state={state} />
+              </div>
+
               <MonitorList monitors={monitors} state={state} />
             </div>
           )}
@@ -98,7 +126,7 @@ export default function Home({
                 fontWeight: 500,
               }}
             >
-              Uptime
+              maoxinhe
             </a>
             {' '}和{' '}
             <a 
@@ -110,7 +138,7 @@ export default function Home({
                 fontWeight: 500,
               }}
             >
-              maoxinhe
+              Cloudflare
             </a>
             {' '}驱动 · 感谢猫慧云提供技术支持
           </Text>
