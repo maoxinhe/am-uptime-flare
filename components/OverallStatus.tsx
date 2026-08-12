@@ -2,10 +2,31 @@ import { Center, Text, RingProgress, Paper } from '@mantine/core'
 import { MonitorState } from '@/uptime.types'
 
 export default function OverallStatus({ state }: { state: MonitorState }) {
-  const total = state.monitors.length
-  const up = state.monitors.filter((m) => m.status === 'operational').length
+  // 安全获取数据
+  const getMonitorCount = () => {
+    if (!state) return { total: 1, up: 0 }
+    
+    // 如果 state 本身就是数组
+    if (Array.isArray(state)) {
+      const total = state.length || 1
+      const up = state.filter((m: any) => m.status === 'operational').length || 0
+      return { total, up }
+    }
+    
+    // 如果 state 有 monitors 属性
+    if (state.monitors && Array.isArray(state.monitors)) {
+      const total = state.monitors.length || 1
+      const up = state.monitors.filter((m: any) => m.status === 'operational').length || 0
+      return { total, up }
+    }
+    
+    // 默认
+    return { total: 1, up: 0 }
+  }
+
+  const { total, up } = getMonitorCount()
   const down = total - up
-  const percentage = total > 0 ? (up / total) * 100 : 100
+  const percentage = (up / total) * 100
 
   return (
     <Paper
@@ -53,7 +74,7 @@ export default function OverallStatus({ state }: { state: MonitorState }) {
               {down} 个服务异常
             </Text>
           )}
-          {down === 0 && (
+          {down === 0 && total > 0 && (
             <Text size="sm" style={{ color: '#4a9e6a' }}>
               ✨ 所有服务运行正常
             </Text>
