@@ -8,18 +8,19 @@ export default function MonitorDetail({
   monitor: MonitorTarget
   state: MonitorState
 }) {
+  // 检查是否有有效数据
+  const hasValidData = state?.lastUpdate && state.lastUpdate > 1000000000
+
   // 获取该监控的状态
   const getStatus = () => {
-    if (!state || !state.incident) return 'operational'
+    if (!hasValidData || !state || !state.incident) return 'unknown'
     
     const incidents = state.incident[monitor.id]
     if (!incidents || incidents.length === 0) return 'operational'
     
-    // 检查是否有未结束的故障
     const hasOpenIncident = incidents.some((inc) => inc.end === undefined)
     if (hasOpenIncident) return 'down'
     
-    // 检查24小时内是否有故障
     const now = Date.now()
     const hasRecentIncident = incidents.some((inc) => {
       const startTime = inc.start[0]
@@ -36,9 +37,10 @@ export default function MonitorDetail({
     operational: { label: '✅ 正常运行', color: 'green' },
     degraded: { label: '⚠️ 性能下降', color: 'yellow' },
     down: { label: '❌ 服务中断', color: 'red' },
+    unknown: { label: '⏳ 等待数据', color: 'gray' },
   }
 
-  const statusInfo = statusMap[status] || statusMap.operational
+  const statusInfo = statusMap[status as keyof typeof statusMap] || statusMap.unknown
 
   // 获取延迟数据
   const latencyData = state?.latency?.[monitor.id]
@@ -68,17 +70,23 @@ export default function MonitorDetail({
                 ? 'rgba(76, 175, 80, 0.2)' 
                 : statusInfo.color === 'yellow' 
                   ? 'rgba(255, 193, 7, 0.2)' 
-                  : 'rgba(244, 67, 54, 0.2)',
+                  : statusInfo.color === 'red'
+                    ? 'rgba(244, 67, 54, 0.2)'
+                    : 'rgba(158, 158, 158, 0.2)',
               color: statusInfo.color === 'green' 
                 ? '#2e7d32' 
                 : statusInfo.color === 'yellow' 
                   ? '#f57f17' 
-                  : '#c62828',
+                  : statusInfo.color === 'red'
+                    ? '#c62828'
+                    : '#616161',
               border: `1px solid ${statusInfo.color === 'green' 
                 ? 'rgba(76, 175, 80, 0.3)' 
                 : statusInfo.color === 'yellow' 
                   ? 'rgba(255, 193, 7, 0.3)' 
-                  : 'rgba(244, 67, 54, 0.3)'}`,
+                  : statusInfo.color === 'red'
+                    ? 'rgba(244, 67, 54, 0.3)'
+                    : 'rgba(158, 158, 158, 0.3)'}`,
             }}
           >
             {statusInfo.label}
@@ -86,9 +94,14 @@ export default function MonitorDetail({
         </Group>
 
         <Group gap="md">
-          {latestPing !== undefined && (
+          {latestPing !== undefined && hasValidData && (
             <Text size="sm" style={{ color: '#7a5a7a' }}>
               ⏱️ {latestPing}ms
+            </Text>
+          )}
+          {!hasValidData && (
+            <Text size="sm" style={{ color: '#9a7a9a' }}>
+              ⏳ 采集数据中...
             </Text>
           )}
           {monitor.statusPageLink && (
